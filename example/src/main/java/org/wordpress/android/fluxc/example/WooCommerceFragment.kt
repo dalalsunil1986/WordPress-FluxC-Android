@@ -107,6 +107,10 @@ class WooCommerceFragment : Fragment(), CustomStatsDialog.Listener {
             }
         }
 
+        fetch_woo_sites.setOnClickListener {
+            dispatcher.dispatch(WCCoreActionBuilder.newFetchWooSitesAction())
+        }
+
         fetch_settings.setOnClickListener {
             getFirstWCSite()?.let {
                 dispatcher.dispatch(WCCoreActionBuilder.newFetchSiteSettingsAction(it))

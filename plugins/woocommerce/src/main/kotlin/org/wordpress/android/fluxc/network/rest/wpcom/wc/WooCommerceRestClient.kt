@@ -7,6 +7,7 @@ import org.wordpress.android.fluxc.Dispatcher
 import org.wordpress.android.fluxc.action.WCCoreAction
 import org.wordpress.android.fluxc.generated.WCCoreActionBuilder
 import org.wordpress.android.fluxc.generated.endpoint.WOOCOMMERCE
+import org.wordpress.android.fluxc.generated.endpoint.WPCOMREST
 import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.model.WCSettingsModel
 import org.wordpress.android.fluxc.model.WCSettingsModel.CurrencyPosition
@@ -23,8 +24,12 @@ import org.wordpress.android.fluxc.store.WooCommerceStore.ApiVersionError
 import org.wordpress.android.fluxc.store.WooCommerceStore.ApiVersionErrorType
 import org.wordpress.android.fluxc.store.WooCommerceStore.FetchApiVersionResponsePayload
 import org.wordpress.android.fluxc.store.WooCommerceStore.FetchWCSiteSettingsResponsePayload
+import org.wordpress.android.fluxc.store.WooCommerceStore.FetchWooSitesResponsePayload
+import org.wordpress.android.fluxc.store.WooCommerceStore.WCFetchWooSitesError
+import org.wordpress.android.fluxc.store.WooCommerceStore.WCFetchWooSitesErrorType
 import org.wordpress.android.fluxc.store.WooCommerceStore.WCSiteSettingsError
 import org.wordpress.android.fluxc.store.WooCommerceStore.WCSiteSettingsErrorType
+import java.util.ArrayList
 import javax.inject.Singleton
 
 @Singleton
@@ -129,5 +134,33 @@ class WooCommerceRestClient(
     private fun networkErrorToSettingsError(wpComError: WPComGsonNetworkError): WCSiteSettingsError {
         val wcSiteSettingsErrorType = WCSiteSettingsErrorType.fromString(wpComError.apiError)
         return WCSiteSettingsError(wcSiteSettingsErrorType, wpComError.message)
+    }
+
+    fun fetchWooSites() {
+        val url = WPCOMREST.me.sites.urlV1_1
+        val params = mapOf("fields" to "ID,options")
+        val responseType = object : TypeToken<WooSitesResponse>() {}.type
+
+        val request = WPComGsonRequest.buildGetRequest(url, params, responseType,
+                { response: WooSitesResponse? ->
+                    val wooSiteIDs = ArrayList<Long>()
+                    response?.sites?.forEach { site ->
+                        if (site.Options().is_wpcom_store) {
+                            site.ID?.let {
+                                wooSiteIDs.add(it)
+                            }
+                        }
+                    }
+                    val payload = FetchWooSitesResponsePayload(wooSiteIDs)
+                    dispatcher.dispatch(WCCoreActionBuilder.newFetchedWooSitesAction(payload))
+                },
+                { error ->
+                    val error = WCFetchWooSitesError(WCFetchWooSitesErrorType.GENERIC_ERROR)
+                    val emptyList = ArrayList<Long>()
+                    val payload = FetchWooSitesResponsePayload(error, emptyList)
+                    dispatcher.dispatch(WCCoreActionBuilder.newFetchedWooSitesAction(payload))
+                }
+        )
+        add(request)
     }
 }

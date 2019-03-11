@@ -83,10 +83,34 @@ class WooCommerceStore @Inject constructor(
         }
     }
 
+    class FetchWooSitesResponsePayload(
+        var siteIdList: List<Long>
+    ) : Payload<WCFetchWooSitesError>() {
+        constructor(error: WCFetchWooSitesError, idList: List<Long>) : this(idList) { this.error = error }
+    }
+
+    class WCFetchWooSitesError(
+        val type: WCFetchWooSitesErrorType = WCFetchWooSitesErrorType.GENERIC_ERROR,
+        val message: String = ""
+    ) : OnChangedError
+
+    enum class WCFetchWooSitesErrorType {
+        GENERIC_ERROR,
+        INVALID_RESPONSE;
+
+        companion object {
+            private val reverseMap = WCFetchWooSitesErrorType.values().associateBy(WCFetchWooSitesErrorType::name)
+            fun fromString(type: String) =
+                    reverseMap[type.toUpperCase(Locale.US)] ?: WCFetchWooSitesErrorType.GENERIC_ERROR
+        }
+    }
+
     // OnChanged events
     class OnApiVersionFetched(val site: SiteModel, val apiVersion: String) : OnChanged<ApiVersionError>()
 
     class OnWCSiteSettingsChanged(val site: SiteModel) : OnChanged<WCSiteSettingsError>()
+
+    class OnWCSitesFetched(val siteIds: List<Long>?) : OnChanged<WCFetchWooSitesError>()
 
     override fun onRegister() = AppLog.d(T.API, "WooCommerceStore onRegister")
 
@@ -97,11 +121,14 @@ class WooCommerceStore @Inject constructor(
             // Remote actions
             WCCoreAction.FETCH_SITE_API_VERSION -> getApiVersion(action.payload as SiteModel)
             WCCoreAction.FETCH_SITE_SETTINGS -> fetchSiteSettings(action.payload as SiteModel)
+            WCCoreAction.FETCH_WOO_SITES -> fetchWooCommerceSites()
             // Remote responses
             WCCoreAction.FETCHED_SITE_API_VERSION ->
                 handleGetApiVersionCompleted(action.payload as FetchApiVersionResponsePayload)
             WCCoreAction.FETCHED_SITE_SETTINGS ->
                 handleFetchSiteSettingsCompleted(action.payload as FetchWCSiteSettingsResponsePayload)
+            WCCoreAction.FETCHED_WOO_SITES ->
+                handleFetchWooSitesCompleted(action.payload as FetchWooSitesResponsePayload)
         }
     }
 
@@ -173,6 +200,8 @@ class WooCommerceStore @Inject constructor(
 
     private fun fetchSiteSettings(site: SiteModel) = wcCoreRestClient.getSiteSettingsGeneral(site)
 
+    private fun fetchWooCommerceSites() = wcCoreRestClient.fetchWooSites()
+
     private fun handleFetchSiteSettingsCompleted(payload: FetchWCSiteSettingsResponsePayload) {
         val onWCSiteSettingsChanged = OnWCSiteSettingsChanged(payload.site)
         if (payload.isError || payload.settings == null) {
@@ -195,5 +224,15 @@ class WooCommerceStore @Inject constructor(
         }
 
         emitChange(onApiVersionFetched)
+    }
+
+    private fun handleFetchWooSitesCompleted(payload: FetchWooSitesResponsePayload) {
+        val onWCSitesFetched: OnWCSitesFetched
+        if (payload.isError) {
+            onWCSitesFetched = OnWCSitesFetched(payload.siteIdList).also { it.error = payload.error }
+        } else {
+            onWCSitesFetched = OnWCSitesFetched(payload.siteIdList)
+        }
+        emitChange(onWCSitesFetched)
     }
 }
