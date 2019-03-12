@@ -14,6 +14,7 @@ import org.wordpress.android.fluxc.model.WCSettingsModel.CurrencyPosition.LEFT
 import org.wordpress.android.fluxc.model.WCSettingsModel.CurrencyPosition.LEFT_SPACE
 import org.wordpress.android.fluxc.model.WCSettingsModel.CurrencyPosition.RIGHT
 import org.wordpress.android.fluxc.model.WCSettingsModel.CurrencyPosition.RIGHT_SPACE
+import org.wordpress.android.fluxc.model.WCSimpleSiteModel
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.WooCommerceRestClient
 import org.wordpress.android.fluxc.persistence.SiteSqlUtils
 import org.wordpress.android.fluxc.persistence.WCSettingsSqlUtils
@@ -83,25 +84,25 @@ class WooCommerceStore @Inject constructor(
         }
     }
 
-    class FetchWooSitesResponsePayload(
-        var siteIdList: List<Long>
-    ) : Payload<WCFetchWooSitesError>() {
-        constructor(error: WCFetchWooSitesError, idList: List<Long>) : this(idList) { this.error = error }
+    class FetchWCSimpleSitesResponsePayload(
+        var simpleSites: List<WCSimpleSiteModel>
+    ) : Payload<FetchWCSimpleSitesError>() {
+        constructor(error: FetchWCSimpleSitesError, sites: List<WCSimpleSiteModel>) : this(sites) { this.error = error }
     }
 
-    class WCFetchWooSitesError(
-        val type: WCFetchWooSitesErrorType = WCFetchWooSitesErrorType.GENERIC_ERROR,
+    class FetchWCSimpleSitesError(
+        val type: FetchWCSimpleSitesErrorType = FetchWCSimpleSitesErrorType.GENERIC_ERROR,
         val message: String = ""
     ) : OnChangedError
 
-    enum class WCFetchWooSitesErrorType {
+    enum class FetchWCSimpleSitesErrorType {
         GENERIC_ERROR,
         INVALID_RESPONSE;
 
         companion object {
-            private val reverseMap = WCFetchWooSitesErrorType.values().associateBy(WCFetchWooSitesErrorType::name)
+            private val reverseMap = FetchWCSimpleSitesErrorType.values().associateBy(FetchWCSimpleSitesErrorType::name)
             fun fromString(type: String) =
-                    reverseMap[type.toUpperCase(Locale.US)] ?: WCFetchWooSitesErrorType.GENERIC_ERROR
+                    reverseMap[type.toUpperCase(Locale.US)] ?: FetchWCSimpleSitesErrorType.GENERIC_ERROR
         }
     }
 
@@ -110,7 +111,7 @@ class WooCommerceStore @Inject constructor(
 
     class OnWCSiteSettingsChanged(val site: SiteModel) : OnChanged<WCSiteSettingsError>()
 
-    class OnWCSitesFetched(val siteIds: List<Long>) : OnChanged<WCFetchWooSitesError>()
+    class OnWCSimpleSitesFetched(val simpleSites: List<WCSimpleSiteModel>) : OnChanged<FetchWCSimpleSitesError>()
 
     override fun onRegister() = AppLog.d(T.API, "WooCommerceStore onRegister")
 
@@ -121,14 +122,14 @@ class WooCommerceStore @Inject constructor(
             // Remote actions
             WCCoreAction.FETCH_SITE_API_VERSION -> getApiVersion(action.payload as SiteModel)
             WCCoreAction.FETCH_SITE_SETTINGS -> fetchSiteSettings(action.payload as SiteModel)
-            WCCoreAction.FETCH_WOO_SITES -> fetchWooCommerceSites()
+            WCCoreAction.FETCH_WOO_SIMPLE_SITES -> fetchWooSimpleSites()
             // Remote responses
             WCCoreAction.FETCHED_SITE_API_VERSION ->
                 handleGetApiVersionCompleted(action.payload as FetchApiVersionResponsePayload)
             WCCoreAction.FETCHED_SITE_SETTINGS ->
                 handleFetchSiteSettingsCompleted(action.payload as FetchWCSiteSettingsResponsePayload)
-            WCCoreAction.FETCHED_WOO_SITES ->
-                handleFetchWooSitesCompleted(action.payload as FetchWooSitesResponsePayload)
+            WCCoreAction.FETCHED_WOO_SIMPLE_SITES ->
+                handleFetchWCSimpleSitesCompleted(action.payload as FetchWCSimpleSitesResponsePayload)
         }
     }
 
@@ -200,7 +201,7 @@ class WooCommerceStore @Inject constructor(
 
     private fun fetchSiteSettings(site: SiteModel) = wcCoreRestClient.getSiteSettingsGeneral(site)
 
-    private fun fetchWooCommerceSites() = wcCoreRestClient.fetchWooSites()
+    private fun fetchWooSimpleSites() = wcCoreRestClient.fetchWooSimpleSites()
 
     private fun handleFetchSiteSettingsCompleted(payload: FetchWCSiteSettingsResponsePayload) {
         val onWCSiteSettingsChanged = OnWCSiteSettingsChanged(payload.site)
@@ -226,13 +227,13 @@ class WooCommerceStore @Inject constructor(
         emitChange(onApiVersionFetched)
     }
 
-    private fun handleFetchWooSitesCompleted(payload: FetchWooSitesResponsePayload) {
-        val onWCSitesFetched: OnWCSitesFetched
+    private fun handleFetchWCSimpleSitesCompleted(payload: FetchWCSimpleSitesResponsePayload) {
+        val onWCSimpleSitesFetched: OnWCSimpleSitesFetched
         if (payload.isError) {
-            onWCSitesFetched = OnWCSitesFetched(payload.siteIdList).also { it.error = payload.error }
+            onWCSimpleSitesFetched = OnWCSimpleSitesFetched(payload.simpleSites).also { it.error = payload.error }
         } else {
-            onWCSitesFetched = OnWCSitesFetched(payload.siteIdList)
+            onWCSimpleSitesFetched = OnWCSimpleSitesFetched(payload.simpleSites)
         }
-        emitChange(onWCSitesFetched)
+        emitChange(onWCSimpleSitesFetched)
     }
 }

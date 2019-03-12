@@ -11,6 +11,7 @@ import org.wordpress.android.fluxc.generated.endpoint.WPCOMREST
 import org.wordpress.android.fluxc.model.SiteModel
 import org.wordpress.android.fluxc.model.WCSettingsModel
 import org.wordpress.android.fluxc.model.WCSettingsModel.CurrencyPosition
+import org.wordpress.android.fluxc.model.WCSimpleSiteModel
 import org.wordpress.android.fluxc.network.UserAgent
 import org.wordpress.android.fluxc.network.discovery.RootWPAPIRestResponse
 import org.wordpress.android.fluxc.network.rest.wpcom.BaseWPComRestClient
@@ -23,10 +24,10 @@ import org.wordpress.android.fluxc.store.WooCommerceStore
 import org.wordpress.android.fluxc.store.WooCommerceStore.ApiVersionError
 import org.wordpress.android.fluxc.store.WooCommerceStore.ApiVersionErrorType
 import org.wordpress.android.fluxc.store.WooCommerceStore.FetchApiVersionResponsePayload
+import org.wordpress.android.fluxc.store.WooCommerceStore.FetchWCSimpleSitesError
+import org.wordpress.android.fluxc.store.WooCommerceStore.FetchWCSimpleSitesErrorType
+import org.wordpress.android.fluxc.store.WooCommerceStore.FetchWCSimpleSitesResponsePayload
 import org.wordpress.android.fluxc.store.WooCommerceStore.FetchWCSiteSettingsResponsePayload
-import org.wordpress.android.fluxc.store.WooCommerceStore.FetchWooSitesResponsePayload
-import org.wordpress.android.fluxc.store.WooCommerceStore.WCFetchWooSitesError
-import org.wordpress.android.fluxc.store.WooCommerceStore.WCFetchWooSitesErrorType
 import org.wordpress.android.fluxc.store.WooCommerceStore.WCSiteSettingsError
 import org.wordpress.android.fluxc.store.WooCommerceStore.WCSiteSettingsErrorType
 import java.util.ArrayList
@@ -136,35 +137,40 @@ class WooCommerceRestClient(
         return WCSiteSettingsError(wcSiteSettingsErrorType, wpComError.message)
     }
 
-    fun fetchWooSites() {
+    /**
+     * Lightweight version of SiteStore.fetchSites() which returns only the ID, name, and URL of sites
+     * running WooCommerce
+     */
+    fun fetchWooSimpleSites() {
         val url = WPCOMREST.me.sites.urlV1_1
+
+        // limit the response to just these fields and limit the options field to just the one that tells us
+        // whether the site is running WooCommerce
         val params = mapOf(
-                "fields" to "ID,options",
+                "fields" to "ID,URL,options,name",
                 "options" to "woocommerce_is_active"
         )
 
-        val responseType = object : TypeToken<WooSitesResponse>() {}.type
+        val responseType = object : TypeToken<WooSimpleSitesResponse>() {}.type
 
         val request = WPComGsonRequest.buildGetRequest(url, params, responseType,
-                { response: WooSitesResponse? ->
-                    val wooSiteIDs = ArrayList<Long>()
+                { response: WooSimpleSitesResponse? ->
+                    val simoleSiteList = ArrayList<WCSimpleSiteModel>()
                     response?.sites?.forEach { site ->
                         site.options?.let { options ->
-                           if (options.woocommerce_is_active) {
-                               site.ID?.let {
-                                   wooSiteIDs.add(it)
-                               }
-                           }
+                            if (options.woocommerce_is_active) {
+                                val simpleSite = WCSimpleSiteModel(site.ID ?: 0, site.URL ?: "", site.name ?: "")
+                                simoleSiteList.add(simpleSite)
+                            }
                         }
                     }
-                    val payload = FetchWooSitesResponsePayload(wooSiteIDs)
-                    dispatcher.dispatch(WCCoreActionBuilder.newFetchedWooSitesAction(payload))
+                    val payload = FetchWCSimpleSitesResponsePayload(simoleSiteList)
+                    dispatcher.dispatch(WCCoreActionBuilder.newFetchedWooSimpleSitesAction(payload))
                 },
                 { error ->
-                    val error = WCFetchWooSitesError(WCFetchWooSitesErrorType.GENERIC_ERROR)
-                    val emptyList = ArrayList<Long>()
-                    val payload = FetchWooSitesResponsePayload(error, emptyList)
-                    dispatcher.dispatch(WCCoreActionBuilder.newFetchedWooSitesAction(payload))
+                    val wcSimpleSitesError = FetchWCSimpleSitesError(FetchWCSimpleSitesErrorType.GENERIC_ERROR)
+                    val payload = FetchWCSimpleSitesResponsePayload(wcSimpleSitesError, emptyList())
+                    dispatcher.dispatch(WCCoreActionBuilder.newFetchedWooSimpleSitesAction(payload))
                 }
         )
         add(request)

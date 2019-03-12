@@ -60,8 +60,8 @@ import org.wordpress.android.fluxc.store.WCStatsStore.OnWCTopEarnersChanged
 import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity
 import org.wordpress.android.fluxc.store.WooCommerceStore
 import org.wordpress.android.fluxc.store.WooCommerceStore.OnApiVersionFetched
+import org.wordpress.android.fluxc.store.WooCommerceStore.OnWCSimpleSitesFetched
 import org.wordpress.android.fluxc.store.WooCommerceStore.OnWCSiteSettingsChanged
-import org.wordpress.android.fluxc.store.WooCommerceStore.OnWCSitesFetched
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
 import org.wordpress.android.util.ToastUtils
@@ -109,7 +109,7 @@ class WooCommerceFragment : Fragment(), CustomStatsDialog.Listener {
         }
 
         fetch_woo_sites.setOnClickListener {
-            dispatcher.dispatch(WCCoreActionBuilder.newFetchWooSitesAction())
+            dispatcher.dispatch(WCCoreActionBuilder.newFetchWooSimpleSitesAction())
         }
 
         fetch_settings.setOnClickListener {
@@ -596,13 +596,13 @@ class WooCommerceFragment : Fragment(), CustomStatsDialog.Listener {
 
     @Suppress("unused")
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onWCSitesFetched(event: OnWCSitesFetched) {
+    fun onWCSimpleSitesFetched(event: OnWCSimpleSitesFetched) {
         if (event.isError) {
             prependToLog("Error fetching woo sites from the api: ${event.error.message}")
             return
         }
 
-        prependToLog("Fetched ${event.siteIds.size} woo sites")
+        prependToLog("Fetched ${event.simpleSites.size} woo sites")
     }
 
     @Suppress("unused")
