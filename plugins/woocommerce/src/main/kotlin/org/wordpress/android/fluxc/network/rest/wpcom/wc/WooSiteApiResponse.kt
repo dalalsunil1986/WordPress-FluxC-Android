@@ -5,7 +5,7 @@ import org.wordpress.android.fluxc.network.Response
 @Suppress("PropertyName")
 class WooSiteApiResponse : Response {
     inner class Options {
-        var is_wpcom_store: Boolean = false
+        var woocommerce_is_active: Boolean = false
     }
 
     val ID: Long? = null

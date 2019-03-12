@@ -138,17 +138,23 @@ class WooCommerceRestClient(
 
     fun fetchWooSites() {
         val url = WPCOMREST.me.sites.urlV1_1
-        val params = mapOf("fields" to "ID,options")
+        val params = mapOf(
+                "fields" to "ID,options",
+                "options" to "woocommerce_is_active"
+        )
+
         val responseType = object : TypeToken<WooSitesResponse>() {}.type
 
         val request = WPComGsonRequest.buildGetRequest(url, params, responseType,
                 { response: WooSitesResponse? ->
                     val wooSiteIDs = ArrayList<Long>()
                     response?.sites?.forEach { site ->
-                        if (site.Options().is_wpcom_store) {
-                            site.ID?.let {
-                                wooSiteIDs.add(it)
-                            }
+                        site.options?.let { options ->
+                           if (options.woocommerce_is_active) {
+                               site.ID?.let {
+                                   wooSiteIDs.add(it)
+                               }
+                           }
                         }
                     }
                     val payload = FetchWooSitesResponsePayload(wooSiteIDs)

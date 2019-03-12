@@ -110,7 +110,7 @@ class WooCommerceStore @Inject constructor(
 
     class OnWCSiteSettingsChanged(val site: SiteModel) : OnChanged<WCSiteSettingsError>()
 
-    class OnWCSitesFetched(val siteIds: List<Long>?) : OnChanged<WCFetchWooSitesError>()
+    class OnWCSitesFetched(val siteIds: List<Long>) : OnChanged<WCFetchWooSitesError>()
 
     override fun onRegister() = AppLog.d(T.API, "WooCommerceStore onRegister")
 

@@ -61,6 +61,7 @@ import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity
 import org.wordpress.android.fluxc.store.WooCommerceStore
 import org.wordpress.android.fluxc.store.WooCommerceStore.OnApiVersionFetched
 import org.wordpress.android.fluxc.store.WooCommerceStore.OnWCSiteSettingsChanged
+import org.wordpress.android.fluxc.store.WooCommerceStore.OnWCSitesFetched
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
 import org.wordpress.android.util.ToastUtils
@@ -593,6 +594,19 @@ class WooCommerceFragment : Fragment(), CustomStatsDialog.Listener {
                 "- updated ${event.rowsAffected} in the db")
     }
 
+    @Suppress("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onWCSitesFetched(event: OnWCSitesFetched) {
+        if (event.isError) {
+            prependToLog("Error fetching woo sites from the api: ${event.error.message}")
+            return
+        }
+
+        prependToLog("Fetched ${event.siteIds.size} woo sites")
+    }
+
+    @Suppress("unused")
+    @Subscribe(threadMode = ThreadMode.MAIN)
     private fun getFirstWCSite() = wooCommerceStore.getWooCommerceSites().getOrNull(0)
 
     private fun getCustomStatsForSite() = getFirstWCSite()?.let {
