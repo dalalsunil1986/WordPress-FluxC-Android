@@ -506,7 +506,6 @@ public class SiteRestClient extends BaseWPComRestClient {
                         payload.checkedUrl = siteUrl;
                         payload.site = siteResponseToSiteModel(response);
                         SiteModel site = siteResponseToSiteModel(response);
-                        mDispatcher.dispatch(SiteActionBuilder.newUpdateSiteAction(site));
                         mDispatcher.dispatch(SiteActionBuilder.newFetchedWpcomSiteByUrlAction(payload));
                     }
                 },
