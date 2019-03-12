@@ -162,6 +162,7 @@ public class SiteRestClient extends BaseWPComRestClient {
 
     public void fetchSite(final SiteModel site) {
         String url = WPCOMREST.sites.getUrlV1_1() + site.getSiteId();
+        AppLog.w(T.API, "fetching " + url); // TODO: remove this
         final WPComGsonRequest<SiteWPComRestResponse> request = WPComGsonRequest.buildGetRequest(url, null,
                 SiteWPComRestResponse.class,
                 new Listener<SiteWPComRestResponse>() {
