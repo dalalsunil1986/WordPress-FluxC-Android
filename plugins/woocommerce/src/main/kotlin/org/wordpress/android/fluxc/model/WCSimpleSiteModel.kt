@@ -1,7 +1,5 @@
 package org.wordpress.android.fluxc.model
 
-import org.wordpress.android.fluxc.model.SiteModel.ORIGIN_WPCOM_REST
-
 class WCSimpleSiteModel(
     val siteId: Long,
     val url: String,
@@ -12,6 +10,6 @@ class WCSimpleSiteModel(
         site.url = url
         site.name = name
         site.setIsJetpackConnected(true)
-        site.origin = ORIGIN_WPCOM_REST
+        site.origin = SiteModel.ORIGIN_WPCOM_REST
     }
 }
