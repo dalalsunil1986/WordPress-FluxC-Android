@@ -13,6 +13,7 @@ import com.yarolegovich.wellsql.WellSql;
 
 import org.wordpress.android.fluxc.model.PostModel;
 import org.wordpress.android.fluxc.model.SiteModel;
+import org.wordpress.android.fluxc.model.list.datastore.PostListItemIdentifier.LocalPostId;
 import org.wordpress.android.fluxc.model.revisions.LocalDiffModel;
 import org.wordpress.android.fluxc.model.revisions.LocalRevisionModel;
 
@@ -271,8 +272,8 @@ public class PostSqlUtils {
                 .endGroup().endWhere().execute();
     }
 
-    public static List<PostModel> getLocalPostsForFilter(SiteModel site, boolean isPage, String searchQuery,
-                                                         String orderBy, @Order int order) {
+    public static List<LocalPostId> getLocalPostIdsForFilter(SiteModel site, boolean isPage, String searchQuery,
+                                                             String orderBy, @Order int order) {
         ConditionClauseBuilder<SelectQuery<PostModel>> clauseBuilder =
                 WellSql.select(PostModel.class).where().beginGroup()
                        .equals(PostModelTable.IS_LOCAL_DRAFT, true)
@@ -283,6 +284,7 @@ public class PostSqlUtils {
             clauseBuilder = clauseBuilder.beginGroup().contains(PostModelTable.TITLE, searchQuery).or()
                                          .contains(PostModelTable.CONTENT, searchQuery).endGroup();
         }
+        // TODO: We should only query the id and return that instead
         return clauseBuilder.endWhere().orderBy(orderBy, order).getAsModel();
     }
 }

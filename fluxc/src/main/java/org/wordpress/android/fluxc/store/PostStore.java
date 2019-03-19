@@ -29,6 +29,8 @@ import org.wordpress.android.fluxc.model.list.ListOrder;
 import org.wordpress.android.fluxc.model.list.PostListDescriptor;
 import org.wordpress.android.fluxc.model.list.PostListDescriptor.PostListDescriptorForRestSite;
 import org.wordpress.android.fluxc.model.list.PostListDescriptor.PostListDescriptorForXmlRpcSite;
+import org.wordpress.android.fluxc.model.list.datastore.PostListItemIdentifier.LocalPostId;
+import org.wordpress.android.fluxc.model.list.datastore.SomeId;
 import org.wordpress.android.fluxc.model.post.PostStatus;
 import org.wordpress.android.fluxc.model.revisions.Diff;
 import org.wordpress.android.fluxc.model.revisions.LocalDiffModel;
@@ -346,6 +348,8 @@ public class PostStore extends Store {
         return PostSqlUtils.getPostsForSite(site, true);
     }
 
+    // This should return either T?
+    public <T> List<T> getItems(List<SomeId> ids) {}
     /**
      * Returns the number of posts in the store for the given site.
      */
@@ -438,7 +442,7 @@ public class PostStore extends Store {
     /**
      * Returns the local posts for the given post list descriptor.
      */
-    public List<PostModel> getLocalPostsForDescriptor(PostListDescriptor postListDescriptor) {
+    public List<LocalPostId> getLocalPostIdsForDescriptor(PostListDescriptor postListDescriptor) {
         String searchQuery = null;
         if (postListDescriptor instanceof PostListDescriptorForRestSite) {
             PostListDescriptorForRestSite descriptor = (PostListDescriptorForRestSite) postListDescriptor;
@@ -473,7 +477,7 @@ public class PostStore extends Store {
         } else {
             order = SelectQuery.ORDER_DESCENDING;
         }
-        return PostSqlUtils.getLocalPostsForFilter(postListDescriptor.getSite(), false, searchQuery, orderBy, order);
+        return PostSqlUtils.getLocalPostIdsForFilter(postListDescriptor.getSite(), false, searchQuery, orderBy, order);
     }
 
     /**
