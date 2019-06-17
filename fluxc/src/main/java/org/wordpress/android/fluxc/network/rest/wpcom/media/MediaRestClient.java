@@ -217,6 +217,7 @@ public class MediaRestClient extends BaseWPComRestClient implements ProgressList
                         MediaModel uploadedMedia = responseMedia.get(0);
                         uploadedMedia.setId(media.getId());
                         uploadedMedia.setLocalPostId(media.getLocalPostId());
+                        uploadedMedia.setFeatured(media.getFeatured());
 
                         notifyMediaUploaded(uploadedMedia, null);
                     } else {
