@@ -132,19 +132,18 @@ class WooV4StatsFragment : Fragment() {
         val site = selectedSite
         when (event.causeOfChange) {
             WCStatsAction.FETCH_ORDER_STATS_V4 -> {
-                val statsMap = wcStatsStore.getRevenueStatsV4(
+                val wcOrderStatsV4Model = wcStatsStore.getRawRevenueStats(
                         site!!,
                         event.granularity,
                         event.startDate!!,
-                        event.endDate!!)
-                if (statsMap.isEmpty()) {
-                    prependToLog("No stats were stored for site " + site.name + " =(")
-                } else {
-                    val revenueSum = statsMap.values.sum()
+                        event.endDate!!
+                )
+                wcOrderStatsV4Model?.let {
+                    val revenueSum = it.getTotal()?.grossRevenue
                     prependToLog("Fetched stats with total " + revenueSum + " for granularity " +
                             event.granularity.toString().toLowerCase() + " from " + site.name +
                             " between " + event.startDate + " and " + event.endDate)
-                }
+                } ?: prependToLog("No stats were stored for site " + site.name + " =(")
             }
         }
     }

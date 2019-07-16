@@ -844,6 +844,7 @@ public class WellSqlConfig extends DefaultWellConfig {
                                + "  START_DATE TEXT NOT NULL,\n"
                                + "  END_DATE TEXT NOT NULL,\n"
                                + "  DATA TEXT NOT NULL,\n"
+                               + "  TOTAL TEXT NOT NULL,\n"
                                + "  _id INTEGER PRIMARY KEY AUTOINCREMENT)");
                     break;
             }
