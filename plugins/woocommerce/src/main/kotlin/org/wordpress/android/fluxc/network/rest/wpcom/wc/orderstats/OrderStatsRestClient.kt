@@ -149,7 +149,8 @@ class OrderStatsRestClient(
         val params = mapOf(
                 "interval" to OrderStatsApiUnit.YEAR.toString(),
                 "after" to startDate,
-                "per_page" to "1")
+                "per_page" to "1",
+                "_fields" to "totals")
 
         val request = JetpackTunnelGsonRequest.buildGetRequest(url, site.siteId, params, responseType,
                 { response: RevenueStatsApiResponse? ->
