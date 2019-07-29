@@ -503,9 +503,8 @@ class WCStatsStore @Inject constructor(
     }
 
     private fun fetchRevenueStatsAvailability(payload: FetchRevenueStatsAvailabilityPayload) {
-        wcOrderStatsClient.fetchRevenueStatsAvailability(
-                payload.site, DateUtils.getStartOfCurrentDay()
-        )
+        val startDate = DateUtils.getStartDateForSite(payload.site, DateUtils.getStartOfCurrentDay())
+        wcOrderStatsClient.fetchRevenueStatsAvailability(payload.site, startDate)
     }
 
     private fun handleFetchRevenueStatsAvailabilityCompleted(payload: FetchRevenueStatsAvailabilityResponsePayload) {
