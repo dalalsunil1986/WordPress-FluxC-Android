@@ -17,6 +17,7 @@ import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRe
 import org.wordpress.android.fluxc.network.rest.wpcom.wc.orderstats.OrderStatsRestClient.OrderStatsApiUnit
 import org.wordpress.android.fluxc.persistence.WCStatsSqlUtils
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType.GENERIC_ERROR
+import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity.YEARS
 import org.wordpress.android.fluxc.utils.DateUtils
 import org.wordpress.android.fluxc.utils.ErrorUtils.OnUnexpectedError
 import org.wordpress.android.fluxc.utils.PreferenceUtils
@@ -128,6 +129,19 @@ class WCStatsStore @Inject constructor(
         }
     }
 
+    class FetchRevenueStatsAvailabilityPayload(
+        val site: SiteModel
+    ) : Payload<BaseNetworkError>()
+
+    class FetchRevenueStatsAvailabilityResponsePayload(
+        val site: SiteModel,
+        val available: Boolean = false
+    ) : Payload<OrderStatsError>() {
+        constructor(error: OrderStatsError, site: SiteModel, available: Boolean) : this(site, available) {
+            this.error = error
+        }
+    }
+
     /**
      * Describes the parameters for fetching visitor stats for [site], up to the current day, month, or year
      * (depending on the given [granularity]).
@@ -208,12 +222,17 @@ class WCStatsStore @Inject constructor(
         when (actionType) {
             WCStatsAction.FETCH_ORDER_STATS -> fetchOrderStats(action.payload as FetchOrderStatsPayload)
             WCStatsAction.FETCH_REVENUE_STATS -> fetchRevenueStats(action.payload as FetchRevenueStatsPayload)
+            WCStatsAction.FETCH_REVENUE_STATS_AVAILABILITY ->
+                fetchRevenueStatsAvailability(action.payload as FetchRevenueStatsAvailabilityPayload)
             WCStatsAction.FETCH_VISITOR_STATS -> fetchVisitorStats(action.payload as FetchVisitorStatsPayload)
             WCStatsAction.FETCH_TOP_EARNERS_STATS -> fetchTopEarnersStats(action.payload as FetchTopEarnersStatsPayload)
             WCStatsAction.FETCHED_ORDER_STATS ->
                 handleFetchOrderStatsCompleted(action.payload as FetchOrderStatsResponsePayload)
             WCStatsAction.FETCHED_REVENUE_STATS ->
                 handleFetchRevenueStatsCompleted(action.payload as FetchRevenueStatsResponsePayload)
+            WCStatsAction.FETCHED_REVENUE_STATS_AVAILABILITY -> handleFetchRevenueStatsAvailabilityCompleted(
+                        action.payload as FetchRevenueStatsAvailabilityResponsePayload
+                )
             WCStatsAction.FETCHED_VISITOR_STATS ->
                 handleFetchVisitorStatsCompleted(action.payload as FetchVisitorStatsResponsePayload)
             WCStatsAction.FETCHED_TOP_EARNERS_STATS ->
@@ -477,9 +496,29 @@ class WCStatsStore @Inject constructor(
         val rowsAffected: Int,
         val granularity: StatsGranularity,
         val startDate: String? = null,
-        val endDate: String? = null
+        val endDate: String? = null,
+        val availability: Boolean = false
     ) : OnChanged<OrderStatsError>() {
         var causeOfChange: WCStatsAction? = null
+    }
+
+    private fun fetchRevenueStatsAvailability(payload: FetchRevenueStatsAvailabilityPayload) {
+        wcOrderStatsClient.fetchRevenueStatsAvailability(
+                payload.site, DateUtils.getStartOfCurrentDay()
+        )
+    }
+
+    private fun handleFetchRevenueStatsAvailabilityCompleted(payload: FetchRevenueStatsAvailabilityResponsePayload) {
+        val onStatsChanged = with(payload) {
+            if (isError) {
+                return@with OnWCRevenueStatsChanged(0, granularity = YEARS, availability = payload.available)
+                        .also { it.error = payload.error }
+            } else {
+                return@with OnWCRevenueStatsChanged(0, granularity = YEARS, availability = payload.available)
+            }
+        }
+        onStatsChanged.causeOfChange = WCStatsAction.FETCH_REVENUE_STATS_AVAILABILITY
+        emitChange(onStatsChanged)
     }
 
     private fun fetchRevenueStats(payload: FetchRevenueStatsPayload) {

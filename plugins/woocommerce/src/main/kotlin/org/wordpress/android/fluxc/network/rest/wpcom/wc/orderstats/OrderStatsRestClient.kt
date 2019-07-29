@@ -21,11 +21,13 @@ import org.wordpress.android.fluxc.network.rest.wpcom.WPComGsonRequest.WPComGson
 import org.wordpress.android.fluxc.network.rest.wpcom.auth.AccessToken
 import org.wordpress.android.fluxc.network.rest.wpcom.jetpacktunnel.JetpackTunnelGsonRequest
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchOrderStatsResponsePayload
+import org.wordpress.android.fluxc.store.WCStatsStore.FetchRevenueStatsAvailabilityResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchRevenueStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchTopEarnersStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.FetchVisitorStatsResponsePayload
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsError
 import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType
+import org.wordpress.android.fluxc.store.WCStatsStore.OrderStatsErrorType.PLUGIN_NOT_ACTIVE
 import org.wordpress.android.fluxc.store.WCStatsStore.StatsGranularity
 import org.wordpress.android.util.AppLog
 import org.wordpress.android.util.AppLog.T
@@ -138,6 +140,29 @@ class OrderStatsRestClient(
         request.enableCaching(BaseRequest.DEFAULT_CACHE_LIFETIME)
         if (force) request.setShouldForceUpdate()
 
+        add(request)
+    }
+
+    fun fetchRevenueStatsAvailability(site: SiteModel, startDate: String) {
+        val url = WOOCOMMERCE.reports.revenue.stats.pathV4
+        val responseType = object : TypeToken<RevenueStatsApiResponse>() {}.type
+        val params = mapOf(
+                "interval" to OrderStatsApiUnit.YEAR.toString(),
+                "after" to startDate,
+                "per_page" to "1")
+
+        val request = JetpackTunnelGsonRequest.buildGetRequest(url, site.siteId, params, responseType,
+                { response: RevenueStatsApiResponse? ->
+                    val payload = FetchRevenueStatsAvailabilityResponsePayload(site, true)
+                    mDispatcher.dispatch(WCStatsActionBuilder.newFetchedRevenueStatsAvailabilityAction(payload))
+                },
+                WPComErrorListener { networkError ->
+                    val orderError = networkErrorToOrderError(networkError)
+                    val available = orderError.type != PLUGIN_NOT_ACTIVE
+                    val payload = FetchRevenueStatsAvailabilityResponsePayload(orderError, site, available)
+                    mDispatcher.dispatch(WCStatsActionBuilder.newFetchedRevenueStatsAvailabilityAction(payload))
+                },
+                { request: WPComGsonRequest<*> -> add(request) })
         add(request)
     }
 
